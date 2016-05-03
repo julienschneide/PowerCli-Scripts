@@ -20,20 +20,28 @@ $interval = 86400
 ###########################################################
 $RPs = get-ResourcePool -Name $selectedRP -Location $selectedHost
 
-foreach($RP in $RPs)
-    {
-	#$RPstat = "" | SELECT CpuLimitMhz, MemLimitMB
-	#$RPstat.CpuLimitMhz = $RP.CpuLimitMhz
-	 
-	 
-	Write-Host "Collecting data for" $RP " resource pool on" $selectedHost "Host..."
-	$statistics += Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval
-	#$statistics += $RPstat
-	Write-Host "CPU Limit Mhz :" $RP.CpuLimitMhz
-	Write-Host "CPU Reservation Mhz :" $RP.CpuReservationMhz
-	Write-Host "Memory Limit MB" $RP.MemLimitMB
-	Write-Host "Memory Reservation Limit MB" $RP.MemReservationMB
+foreach($RP in $RPs){
+		Write-Host "Collecting data for" $RP " resource pool on" $selectedHost "Host..."
+		
+		$statistics += Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval | %{
+			New-Object PSObject -Property @{
+				Time = $_.Timestamp
+				Host = $selectedHost
+				"Resource Pool" = $_.Entity.Name
+				Metric = $_.MetricId
+				Value = $_.Value
+				Unit = $_.Unit
+				"CPU Limit" = $RP.CpuLimitMhz
+				"Memory Limit" = $RP.MemLimitMB
+			}
+		}
+		
     }
 	
-#$statistics | SELECT Timestamp, Entity, MetricId, Unit, Value | Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
-$statistics | Sort-Object Entity, MetricId, Timestamp | Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
+###########################################################
+# Export vers fichier CSV
+###########################################################
+$statistics | 
+			SELECT Time, Host, "Resource Pool", Metric, Value, Unit, "CPU Limit", "Memory Limit" |
+			Sort-Object "Resource Pool", Metric, Time |
+			Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
