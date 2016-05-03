@@ -3,45 +3,66 @@
 ###########################################################
 
 ###########################################################
-# Renseignement des variables du script
+# Renseignement des variables du script par l'utilisateur
 ###########################################################
-$statistics = @()
+<#
+if(($vCenter = Read-Host "Enter the vCenter IP address ") -eq ''){"10.10.2.10"}
+if(($vCenterUser = Read-Host "Enter the username for the vCenter connection ") -eq ''){""}
+if(($vCenterPassword = Read-Host -assecurestring "Enter the password for the vCenter connection ") -eq ''){""}
 
+if(($selectedHost = Read-Host "Enter the name of the host on which perform statistics collection ") -eq ''){"lssrvp01.arcentis.local"}
+if(($selectedRP = Read-Host "Enter the resources pools names ") -eq ''){"dbi-services", "dbi-prod", "dbi-test"}
+if(($metrics_rp = Read-Host "Enter metrics names ") -eq ''){"cpu.usagemhz.average", "mem.consumed.average", "mem.active.average", "mem.overhead.average"}
+if(($sDate = Read-Host "Enter the start date for statistics collection ") -eq ''){"01/04/2016"}
+if(($fDate = Read-Host "Enter the end date for statistics collection ") -eq ''){"30/04/2016"}
+if(($interval = Read-Host "Enter the interval for statistics collection ") -eq ''){86400}
+#>
+<#
+$selectedRP = "dbi-services", "dbi-prod", "dbi-test"
+Write-Host $SelectedRP
+#>
 $selectedHost = "lssrvp01.arcentis.local"
 $selectedRP = "dbi-services", "dbi-prod", "dbi-test"
 $metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average", "mem.overhead.average"
+$sDate = "30/04/2016"
+$fDate = "03/05/2016"
+$interval = 43200
 
-$sDate = "01/04/2016"
-$fDate = "30/04/2016"
-$interval = 86400
 
 ###########################################################
 # Début du script
 ###########################################################
+#Connect-VIServer -Server $vCenter -Protocol https -User $vCenterUser -Password $vCenterPassword
+
+$statistics = @()
 $RPs = get-ResourcePool -Name $selectedRP -Location $selectedHost
 
 foreach($RP in $RPs){
-		Write-Host "Collecting data for" $RP " resource pool on" $selectedHost "Host..."
-		
-		$statistics += Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval | %{
-			New-Object PSObject -Property @{
-				Time = $_.Timestamp
-				Host = $selectedHost
-				"Resource Pool" = $_.Entity.Name
-				Metric = $_.MetricId
-				Value = $_.Value
-				Unit = $_.Unit
-				"CPU Limit" = $RP.CpuLimitMhz
-				"Memory Limit" = $RP.MemLimitMB
-			}
-		}
-		
-    }
+	Write-Host "Collecting data for" $RP " resource pool on" $selectedHost "Host..."
 	
+	$statistics += Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval | %{
+		New-Object PSObject -Property @{
+			Time = $_.Timestamp
+			Host = $selectedHost
+			"Resource Pool" = $_.Entity.Name
+			Metric = $_.MetricId
+			Value = $_.Value
+			Unit = $_.Unit
+			"CPU Limit" = $RP.CpuLimitMhz
+			"Memory Limit" = $RP.MemLimitMB
+		}
+	}
+}
+
+#Disconnect-VIServer $vCenter -Confirm:$false
+
 ###########################################################
 # Export vers fichier CSV
 ###########################################################
+$Resp = "dbi-prod"
+$out_file = ".\exports\RPPerf"+$Resp+".csv"
+
 $statistics | 
 			SELECT Time, Host, "Resource Pool", Metric, Value, Unit, "CPU Limit", "Memory Limit" |
 			Sort-Object "Resource Pool", Metric, Time |
-			Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
+			Export-CSV -Path $out_file  -Force -NoTypeInformation
