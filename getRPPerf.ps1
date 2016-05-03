@@ -13,4 +13,4 @@ foreach($RP in $RPs)
 	 $stats += Get-Stat -Entity $RP -Stat $metrics_rp -Start 30/04/2016 -Finish 03/05/2016 -IntervalMins 86400
     }
 	
-$stats | Export-CSV -Path .\exports\RPPerf.csv -Force
+$stats | Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
