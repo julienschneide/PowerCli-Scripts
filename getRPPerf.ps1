@@ -12,7 +12,7 @@ $selectedRP = "dbi-services", "dbi-prod", "dbi-test"
 $metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average", "mem.overhead.average"
 
 $sDate = "01/04/2016"
-$fDate = "03/05/2016"
+$fDate = "30/04/2016"
 $interval = 86400
 
 ###########################################################
@@ -24,6 +24,12 @@ foreach($RP in $RPs)
     {
      Write-Host "Collecting data for" $RP " resource pool..."
 	 $statistics += Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval
+	 #$statistics += RP.CpuLimitMhz
+	 Write-Host "CPU Limit Mhz :" $RP.CpuLimitMhz
+	 Write-Host "CPU Reservation Mhz :" $RP.CpuReservationMhz
+	 Write-Host "Memory Limit MB" $RP.MemLimitMB
+	 Write-Host "Memory Reservation Limit MB" $RP.MemReservationMB
     }
 	
-$statistics | SELECT Timestamp, Entity, MetricId, Unit, Value | Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
+#$statistics | SELECT Timestamp, Entity, MetricId, Unit, Value | Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
+$statistics | Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
