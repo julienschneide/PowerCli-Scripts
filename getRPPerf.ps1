@@ -5,8 +5,10 @@
 ###########################################################
 # Renseignement des variables du script
 ###########################################################
+$statistics = @()
+
 $selectedHost = "lssrvp01.arcentis.local"
-$selectedRP = "dbi-services, dbi-prod, dbi-test"
+$selectedRP = "dbi-services", "dbi-prod", "dbi-test"
 $metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average", "mem.overhead.average"
 
 $sDate = "01/04/2016"
@@ -17,8 +19,6 @@ $interval = 86400
 # Début du script
 ###########################################################
 $RPs = get-ResourcePool -Name $selectedRP -Location $selectedHost
-Write-Host "get-ResourcePool -Name" $selectedRP "-Location" $selectedHost
-$statistics = @()
 
 foreach($RP in $RPs)
     {
