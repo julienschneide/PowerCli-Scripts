@@ -1,16 +1,29 @@
-$sdate = 01/04/2016
-$fdate = 30/04/2016
+###########################################################
+#   Scripts de récupération des statistiques VMware
+###########################################################
 
+###########################################################
+# Renseignement des variables du script
+###########################################################
+$selectedHost = "lssrvp01.arcentis.local"
+$selectedRP = "dbi-services, dbi-prod, dbi-test"
 $metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average", "mem.overhead.average"
 
-$RPs = get-ResourcePool -Name dbi-services, dbi-prod, dbi-test -Location lssrvp01.arcentis.local
+$sDate = "01/04/2016"
+$fDate = "03/05/2016"
+$interval = 86400
 
-$stats = @()
+###########################################################
+# Début du script
+###########################################################
+$RPs = get-ResourcePool -Name $selectedRP -Location $selectedHost
+Write-Host "get-ResourcePool -Name" $selectedRP "-Location" $selectedHost
+$statistics = @()
 
 foreach($RP in $RPs)
     {
      Write-Host "Collecting data for" $RP " resource pool..."
-	 $stats += Get-Stat -Entity $RP -Stat $metrics_rp -Start 30/04/2016 -Finish 03/05/2016 -IntervalMins 86400
+	 $statistics += Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval
     }
 	
-$stats | Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
+$statistics | SELECT Timestamp, Entity, MetricId, Unit, Value | Export-CSV -Path .\exports\RPPerf.csv -Force -NoTypeInformation
