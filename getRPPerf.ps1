@@ -1,6 +1,8 @@
 ###########################################################
 #   Scripts de récupération des statistiques VMware
 ###########################################################
+# Auteur : Julien Schneider
+# Date : 06.05.2016
 
 ###########################################################
 # Renseignement des variables du script par l'utilisateur
@@ -23,10 +25,10 @@ Write-Host $SelectedRP
 #>
 $selectedHost = "lssrvp01.arcentis.local"
 $selectedRP = "dbi-services", "dbi-prod", "dbi-test"
-$metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average", "mem.overhead.average"
+$metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average"
 $sDate = "30/04/2016"
-$fDate = "03/05/2016"
-$interval = 43200
+$fDate = "06/05/2016"
+$interval = 60
 
 
 ###########################################################
@@ -59,8 +61,8 @@ foreach($RP in $RPs){
 ###########################################################
 # Export vers fichier CSV
 ###########################################################
-$Resp = "dbi-prod"
-$out_file = ".\exports\RPPerf"+$Resp+".csv"
+$Resp = "April2016_host2"
+$out_file = ".\exports\RPPerf_"+$Resp+".csv"
 
 $statistics | 
 			SELECT Time, Host, "Resource Pool", Metric, Value, Unit, "CPU Limit", "Memory Limit" |
