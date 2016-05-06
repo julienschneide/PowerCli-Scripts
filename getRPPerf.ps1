@@ -8,28 +8,24 @@
 # Renseignement des variables du script par l'utilisateur
 ###########################################################
 <#
-if(($vCenter = Read-Host "Enter the vCenter IP address ") -eq ''){"10.10.2.10"}
-if(($vCenterUser = Read-Host "Enter the username for the vCenter connection ") -eq ''){""}
-if(($vCenterPassword = Read-Host -assecurestring "Enter the password for the vCenter connection ") -eq ''){""}
+if(($vCenter = Read-Host "Enter the vCenter IP address ") -eq ''){$vCenter = "10.10.2.10"}
+if(($vCenterUser = Read-Host "Enter the username for the vCenter connection ") -eq ''){$vCenterUser = ""}
+if(($vCenterPassword = Read-Host -assecurestring "Enter the password for the vCenter connection ") -eq ''){$vCenterPassword = ""}
 
-if(($selectedHost = Read-Host "Enter the name of the host on which perform statistics collection ") -eq ''){"lssrvp01.arcentis.local"}
-if(($selectedRP = Read-Host "Enter the resources pools names ") -eq ''){"dbi-services", "dbi-prod", "dbi-test"}
-if(($metrics_rp = Read-Host "Enter metrics names ") -eq ''){"cpu.usagemhz.average", "mem.consumed.average", "mem.active.average", "mem.overhead.average"}
-if(($sDate = Read-Host "Enter the start date for statistics collection ") -eq ''){"01/04/2016"}
-if(($fDate = Read-Host "Enter the end date for statistics collection ") -eq ''){"30/04/2016"}
-if(($interval = Read-Host "Enter the interval for statistics collection ") -eq ''){86400}
-#>
-<#
-$selectedRP = "dbi-services", "dbi-prod", "dbi-test"
-Write-Host $SelectedRP
+if(($selectedHost = Read-Host "Enter the name of the host on which perform statistics collection ") -eq ''){$selectedHost = "lssrvp01.arcentis.local"}
+if(($selectedRP = Read-Host "Enter the resources pools names ") -eq ''){$selectedRP = "dbi-services", "dbi-prod", "dbi-test"}
+if(($metrics_rp = Read-Host "Enter metrics names ") -eq ''){$metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average", "mem.overhead.average"}
+
+if(($sDate = Read-Host "Enter the start date for statistics collection ") -eq ''){$sDate = "01/04/2016"}
+if(($fDate = Read-Host "Enter the end date for statistics collection ") -eq ''){$fDate = "30/04/2016"}
+if(($interval = Read-Host "Enter the interval for statistics collection ") -eq ''){$interval = 86400}
 #>
 $selectedHost = "lssrvp01.arcentis.local"
 $selectedRP = "dbi-services", "dbi-prod", "dbi-test"
 $metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average"
 $sDate = "30/04/2016"
 $fDate = "06/05/2016"
-$interval = 60
-
+$interval = 86400
 
 ###########################################################
 # Début du script
@@ -52,6 +48,8 @@ foreach($RP in $RPs){
 			Unit = $_.Unit
 			"CPU Limit" = $RP.CpuLimitMhz
 			"Memory Limit" = $RP.MemLimitMB
+			"CPU Share Level" = $RP.CpuSharesLevel
+			"Memory Share Level" = $RP.MemSharesLevel
 		}
 	}
 }
@@ -65,6 +63,8 @@ $Resp = "April2016_host2"
 $out_file = ".\exports\RPPerf_"+$Resp+".csv"
 
 $statistics | 
-			SELECT Time, Host, "Resource Pool", Metric, Value, Unit, "CPU Limit", "Memory Limit" |
+			SELECT Time, Host, "Resource Pool", Metric, Value, Unit, "CPU Limit", "Memory Limit", "CPU Share Level", "Memory Share Level" |
 			Sort-Object "Resource Pool", Metric, Time |
 			Export-CSV -Path $out_file  -Force -NoTypeInformation
+			
+Invoke-Item $out_file
