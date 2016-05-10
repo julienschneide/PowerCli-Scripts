@@ -4,6 +4,28 @@
 # Auteur : Julien Schneider
 # Date : 10.05.2016
 
+Clear-Host
+Write-Host "
+********************************
+**   VMware Capacity Report   **
+********************************
+"
+###########################################################
+# Loading PowerCli Environment
+###########################################################
+	if (Get-PSSnapin vmware* -ErrorAction SilentlyContinue) {
+		Write-Host "vSphere snapin already loaded, proceeding."
+	} else {
+		Write-Host "Loading vSphere snapin."
+		Add-pssnapin VMWare.VimAutomation.Core -ErrorAction SilentlyContinue
+		if (Get-PSSnapin vmware* -ErrorAction SilentlyContinue) {
+			Write-Host "vSphere snapin loaded"
+		} else {
+			Write-Host -ForegroundColor Red "Error loading vSphere snapin. Halting."
+			Write-Host -ForegroundColor Red "VMware PowerCLI is required to run this script."
+			break
+		}
+}	
 ###########################################################
 # Importation des modules
 ###########################################################
@@ -12,11 +34,11 @@ Import-Module .\modules\Merge-CSVFiles.psm1 -Force
 ###########################################################
 # Renseignement des variables du script par l'utilisateur
 ###########################################################
-<#
-if(($vCenter = Read-Host "Enter the vCenter IP address ") -eq ''){$vCenter = "10.10.2.10"}
-if(($vCenterUser = Read-Host "Enter the username for the vCenter connection ") -eq ''){$vCenterUser = ""}
-if(($vCenterPassword = Read-Host -assecurestring "Enter the password for the vCenter connection ") -eq ''){$vCenterPassword = ""}
 
+if(($vCenterIP = Read-Host "Enter the vCenter IP address ") -eq ''){$vCenter = ""}
+#if(($vCenterUser = Read-Host "Enter the username for the vCenter connection ") -eq ''){$vCenterUser = ""}
+#if(($vCenterPassword = Read-Host -assecurestring "Enter the password for the vCenter connection ") -eq ''){$vCenterPassword = ""}
+<#
 if(($selectedHost = Read-Host "Enter the name of the host on which perform statistics collection ") -eq ''){$selectedHost = "lssrvp01.arcentis.local"}
 if(($selectedRP = Read-Host "Enter the resources pools names ") -eq ''){$selectedRP = "dbi-services", "dbi-prod", "dbi-test"}
 if(($metrics_rp = Read-Host "Enter metrics names ") -eq ''){$metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average", "mem.overhead.average"}
@@ -36,7 +58,12 @@ $interval = 86400
 ###########################################################
 # Début du script
 ###########################################################
-#Connect-VIServer -Server $vCenter -Protocol https -User $vCenterUser -Password $vCenterPassword
+
+#Connect-VIServer -Server $vCenter -Protocol https -User $vCenterUser -Password $vCenterPassword 
+Connect-VIServer -Server $vCenterIP
+write-host "`n"
+Write-Host "Please wait while we attempt to connect to $vCenterIP ..."
+write-host "`n"
 
 $statistics = @()
 $RPs = get-ResourcePool -Name $selectedRP -Location $selectedHost
@@ -45,12 +72,15 @@ foreach($RP in $RPs){
 	Write-Host "Collecting data for" $RP " resource pool on" $selectedHost "Host..."
 	
 	$statistics = Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval | %{
+	
+		if($_.MetricId.StartsWith("mem.")) {$MetricValue = [math]::Round(($_.Value / 1024), 2)} else {$MetricValue = $_.Value}
+		
 		New-Object PSObject -Property @{
 			Time = $_.Timestamp.ToString('dd.MM.yyyy')
 			Host = $selectedHost
 			"Resource Pool" = $_.Entity.Name
 			Metric = $_.MetricId
-			Value = $_.Value
+			Value = $MetricValue
 			Unit = $_.Unit
 			"CPU Limit" = $RP.CpuLimitMhz
 			"Memory Limit" = $RP.MemLimitMB
@@ -58,6 +88,7 @@ foreach($RP in $RPs){
 			"Memory Share Level" = $RP.MemSharesLevel
 		}
 	}
+	
 	$CSVOutDirectory = ".\exports\"+$selectedHost+"\"
 	$CSVOutFileName = "Report_"+$RP.Name+".csv"
 	$CSVOutPathFile = $CSVOutDirectory + $CSVOutFileName
@@ -70,11 +101,13 @@ foreach($RP in $RPs){
 	$statistics = @()
 }
 
+write-host "`n"
+
 $MonthYearDate = Get-Date -Format MMMM-yyyy
 $XLSXOutPathFile = $PSScriptRoot + "\exports\"+$selectedHost+"\ExcelReport-" + $MonthYearDate + ".xlsx"
 Merge-CSVFiles -CSVPath $CSVOutDirectory -XLOutput $XLSXOutPathFile
 
-#Disconnect-VIServer $vCenter -Confirm:$false
+Disconnect-VIServer $vCenterIP -Confirm:$false
 
 ###########################################################
 # Export vers fichier CSV
