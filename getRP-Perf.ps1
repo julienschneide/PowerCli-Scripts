@@ -2,7 +2,12 @@
 #   Scripts de récupération des statistiques VMware
 ###########################################################
 # Auteur : Julien Schneider
-# Date : 06.05.2016
+# Date : 10.05.2016
+
+###########################################################
+# Importation des modules
+###########################################################
+Import-Module .\modules\Merge-CSVFiles.psm1 -Force
 
 ###########################################################
 # Renseignement des variables du script par l'utilisateur
@@ -53,16 +58,21 @@ foreach($RP in $RPs){
 			"Memory Share Level" = $RP.MemSharesLevel
 		}
 	}
-	
-	$out_file = ".\exports\"+$selectedHost+"\RPPerf_"+$RP.Name+".csv"
+	$CSVOutDirectory = ".\exports\"+$selectedHost+"\"
+	$CSVOutFileName = "Report_"+$RP.Name+".csv"
+	$CSVOutPathFile = $CSVOutDirectory + $CSVOutFileName
 	
 	$statistics | 
 			SELECT Time, Host, "Resource Pool", Metric, Value, Unit, "CPU Limit", "Memory Limit", "CPU Share Level", "Memory Share Level" |
 			Sort-Object "Resource Pool", Metric, Time |
-			Export-CSV -Path $out_file  -Force -NoTypeInformation
+			Export-CSV -Path $CSVOutPathFile  -Force -NoTypeInformation
 	
 	$statistics = @()
 }
+
+$MonthYearDate = Get-Date -Format MMMM-yyyy
+$XLSXOutPathFile = $PSScriptRoot + "\exports\"+$selectedHost+"\ExcelReport-" + $MonthYearDate + ".xlsx"
+Merge-CSVFiles -CSVPath $CSVOutDirectory -XLOutput $XLSXOutPathFile
 
 #Disconnect-VIServer $vCenter -Confirm:$false
 
