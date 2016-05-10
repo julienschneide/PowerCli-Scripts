@@ -20,6 +20,7 @@ if(($sDate = Read-Host "Enter the start date for statistics collection ") -eq ''
 if(($fDate = Read-Host "Enter the end date for statistics collection ") -eq ''){$fDate = "30/04/2016"}
 if(($interval = Read-Host "Enter the interval for statistics collection ") -eq ''){$interval = 86400}
 #>
+
 $selectedHost = "lssrvp01.arcentis.local"
 $selectedRP = "dbi-services", "dbi-prod", "dbi-test"
 $metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average"
@@ -38,9 +39,9 @@ $RPs = get-ResourcePool -Name $selectedRP -Location $selectedHost
 foreach($RP in $RPs){
 	Write-Host "Collecting data for" $RP " resource pool on" $selectedHost "Host..."
 	
-	$statistics += Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval | %{
+	$statistics = Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval | %{
 		New-Object PSObject -Property @{
-			Time = $_.Timestamp
+			Time = $_.Timestamp.ToString('dd.MM.yyyy')
 			Host = $selectedHost
 			"Resource Pool" = $_.Entity.Name
 			Metric = $_.MetricId
@@ -52,6 +53,15 @@ foreach($RP in $RPs){
 			"Memory Share Level" = $RP.MemSharesLevel
 		}
 	}
+	
+	$out_file = ".\exports\"+$selectedHost+"\RPPerf_"+$RP.Name+".csv"
+	
+	$statistics | 
+			SELECT Time, Host, "Resource Pool", Metric, Value, Unit, "CPU Limit", "Memory Limit", "CPU Share Level", "Memory Share Level" |
+			Sort-Object "Resource Pool", Metric, Time |
+			Export-CSV -Path $out_file  -Force -NoTypeInformation
+	
+	$statistics = @()
 }
 
 #Disconnect-VIServer $vCenter -Confirm:$false
@@ -59,7 +69,7 @@ foreach($RP in $RPs){
 ###########################################################
 # Export vers fichier CSV
 ###########################################################
-$Resp = "April2016_host2"
+<#$Resp = "lssrvp01-dbi"
 $out_file = ".\exports\RPPerf_"+$Resp+".csv"
 
 $statistics | 
@@ -68,3 +78,5 @@ $statistics |
 			Export-CSV -Path $out_file  -Force -NoTypeInformation
 			
 Invoke-Item $out_file
+
+#>
