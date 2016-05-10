@@ -29,8 +29,8 @@ if(($interval = Read-Host "Enter the interval for statistics collection ") -eq '
 $selectedHost = "lssrvp01.arcentis.local"
 $selectedRP = "dbi-services", "dbi-prod", "dbi-test"
 $metrics_rp = "cpu.usagemhz.average", "mem.consumed.average", "mem.active.average"
-$sDate = "30/04/2016"
-$fDate = "06/05/2016"
+$sDate = "01/04/2016"
+$fDate = "30/04/2016"
 $interval = 86400
 
 ###########################################################
