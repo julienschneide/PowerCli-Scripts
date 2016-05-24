@@ -20,6 +20,7 @@ Function Merge-CSVFiles{
 	$Excel = New-Object -ComObject excel.application 
 	$Excel.visible = $false
 	$Excel.sheetsInNewWorkbook = $csvFiles.Count
+	$Excel.displayAlerts = $false
 	$workbooks = $excel.Workbooks.Add()
 	$CSVSheet = 1
 

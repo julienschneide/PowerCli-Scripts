@@ -1,15 +1,17 @@
 ###########################################################
 #   Scripts de récupération des statistiques VMware
 ###########################################################
-# Auteur : Julien Schneider
-# Date : 10.05.2016
+# Auteur 			   : Julien Schneider
+# Date de modification : 24.05.2016
 
 Clear-Host
+
 Write-Host "
 ********************************
 **   VMware Capacity Report   **
 ********************************
 "
+
 ###########################################################
 # Loading PowerCli Environment
 ###########################################################
@@ -38,7 +40,7 @@ Import-Module .\modules\Merge-CSVFiles.psm1 -Force
 ###########################################################
 
 # Connexion au server vCenter :
-#if(($vCenterIP = Read-Host "Enter the vCenter IP address ") -eq ''){$vCenter = ""}
+# !! a réactiver if(($vCenterIP = Read-Host "Enter the vCenter IP address ") -eq ''){$vCenter = ""}
 
 # Import d'un fichier de configuration :
 . .\conf\config1.ps1
@@ -66,19 +68,19 @@ $interval = 86400
 # Début du script
 ###########################################################
 
-<#Connect-VIServer -Server $vCenterIP
+# !! a réactiver Connect-VIServer -Server $vCenterIP
 
 
 Write-Host "Please wait while we attempt to connect to $vCenterIP ..."
 write-host "`n"
-#>
+
 $statistics = @()
 $RPs = get-ResourcePool -Name $selectedRP -Location $selectedHost
 
 foreach($RP in $RPs){
 	Write-Host "Collecting data for" $RP " resource pool on" $selectedHost "Host..."
 	
-	$statistics = Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalMins $interval | %{
+	$statistics = Get-Stat -Entity $RP -Stat $metrics_rp -Start $sDate -Finish $fDate -IntervalSecs $interval | %{
 	
 		if($_.MetricId.StartsWith("mem.")){
 			$MetricValue = [math]::Round(($_.Value / 1024), 2)
@@ -89,7 +91,8 @@ foreach($RP in $RPs){
 		}
 		
 		New-Object PSObject -Property @{
-			Time = $_.Timestamp.ToString('dd.MM.yyyy')
+			# Time = $_.Timestamp.ToString('dd.MM.yyyy')
+			Time = $_.Timestamp
 			Host = $selectedHost
 			"Resource Pool" = $_.Entity.Name
 			Metric = $_.MetricId
@@ -121,5 +124,9 @@ $XLSXOutPathFile = $PSScriptRoot + "\exports\"+$selectedHost+"\ExcelReport-" + $
 
 Merge-CSVFiles -CSVPath $CSVOutDirectory -XLOutput $XLSXOutPathFile
 
-# Functional :
-#Disconnect-VIServer $vCenterIP -Confirm:$false
+write-host "`n"
+write-host Excel file exported at $XLSXOutPathFile
+
+Invoke-Item $XLSXOutPathFile
+
+# !! a réactiver Disconnect-VIServer $vCenterIP -Confirm:$false
